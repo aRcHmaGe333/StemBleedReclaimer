@@ -54,3 +54,22 @@ The correct equivalent is:
 8. Reconstruct a smooth suppression mask at the original signal level; do not restore an averaging gain because no destructive waveform averaging is used.
 
 This yields the requested homogeneous noise **model** while retaining the changing cross-stem component as separate evidence rather than smearing it into the stationary noise floor.
+
+## Full-length cross-stem bleed prediction
+
+> this needs to be done with the quiet parts of every stem, of course, individually... OR .. we can noise remove based on the fact that we KNOW that the other three stems summed up, made quiet ARE the bleed more or less. They're like a faint image of the other three stems. If we know exactly how the noise is gonna change and have its full signal, then we can remove it as a full-length noise.
+
+This is the stronger primary path when synchronized stems are available. For each target stem independently, the other three stems remain separate reference channels. Quiet regions in the target teach the frequency-dependent attenuation, phase, delay, and slowly changing transfer from each reference stem into the target:
+
+`predicted_bleed_target(t,f) = H1(t,f) * stem1(t,f) + H2(t,f) * stem2(t,f) + H3(t,f) * stem3(t,f)`
+
+The learned transfer functions then predict the changing bleed over the target's full duration. The predicted bleed is subtracted only where model confidence and target-inactivity evidence permit it.
+
+The other stems must not be summed before learning: keeping three reference channels allows the model to distinguish drum, bass, tonal, and vocal leakage and prevents phase cancellation or one source masking another. No manual “make quiet” gain is required; the learned transfer functions contain the actual attenuation and phase relationship. A simple scalar-volume copy is insufficient because separation bleed is frequency-dependent and can drift over time.
+
+The aggregate owner-free spectral noise model remains a second stage for residual hiss, hum, and stochastic noise that cannot be predicted from the other stems. Therefore each target stem receives:
+
+1. full-length multichannel reference prediction for changing cross-stem bleed;
+2. confidence-limited subtraction with transient, tail, and stereo protection;
+3. owner-free learned spectral denoising for the remaining noise floor;
+4. residual/difference audition and a no-removal reference for HITL.
