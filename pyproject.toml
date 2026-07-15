@@ -12,6 +12,7 @@ dependencies = ["numpy>=1.24", "scipy>=1.10", "soundfile>=0.12"]
 [project.scripts]
 stem-bleed-reclaimer = "stem_bleed_reclaimer.cli:main"
 stem-bleed-diagnose = "stem_bleed_reclaimer.diagnose_cli:main"
+stem-bleed-ir-paint = "stem_bleed_reclaimer.ir_paint_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
