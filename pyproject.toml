@@ -11,6 +11,7 @@ dependencies = ["numpy>=1.24", "scipy>=1.10", "soundfile>=0.12"]
 
 [project.scripts]
 stem-bleed-reclaimer = "stem_bleed_reclaimer.cli:main"
+stem-bleed-diagnose = "stem_bleed_reclaimer.diagnose_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -18,4 +19,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-
