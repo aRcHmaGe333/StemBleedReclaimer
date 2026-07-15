@@ -45,3 +45,25 @@ def test_quiet_regions_learn_ir_then_paint_and_remove_full_length_bleed():
     assert correlation > 0.97
     assert float(np.sqrt(np.mean(residual**2))) < float(np.sqrt(np.mean(bleed[1000:-1000] ** 2))) * 0.20
     assert float(np.sqrt(np.mean(cleaned[3 * sample_rate : 6 * sample_rate, 0] ** 2))) > 0.19
+
+
+def test_chunked_paint_matches_single_pass_without_boundary_glitches():
+    sample_rate = 8000
+    frames = sample_rate * 5
+    rng = np.random.default_rng(91)
+    source = rng.normal(0, 0.2, frames).astype(np.float32)
+    stems = {
+        "drums": source[:, None],
+        "bass": np.zeros((frames, 1), dtype=np.float32),
+        "other": np.zeros((frames, 1), dtype=np.float32),
+        "vocals": lfilter([0.1, -0.02], [1.0], source).astype(np.float32)[:, None],
+    }
+    full = IRBleedPainter(n_fft=512, hop_size=128, paint_chunk_seconds=0)
+    chunked = IRBleedPainter(n_fft=512, hop_size=128, paint_chunk_seconds=0.75)
+    model = full.learn(stems, sample_rate, "vocals", [(0, frames)])
+    expected = full.paint(stems, model)
+    actual = chunked.paint(stems, model)
+    error = np.abs(expected - actual)[:, 0]
+    assert float(np.max(error)) < 1.0e-5
+    for boundary in range(round(0.75 * sample_rate), frames, round(0.75 * sample_rate)):
+        assert float(np.max(error[max(0, boundary - 16) : boundary + 16])) < 1.0e-5

@@ -13,6 +13,9 @@ class MixDistance:
     level_match_gain: float
     level_match_gain_db: float
     level_matched_delta_rms: float
+    peak_match_gain: float
+    peak_match_gain_db: float
+    peak_matched_delta_rms: float
     correlation: float
 
 
@@ -55,11 +58,27 @@ def _distance(candidate: np.ndarray, reference: np.ndarray) -> MixDistance:
     matched_delta = level_matched - reference
     level_matched_delta_rms = float(np.sqrt(np.mean(np.square(matched_delta, dtype=np.float64)) + 1.0e-15))
     level_match_gain_db = float(20.0 * np.log10(max(level_match_gain, 1.0e-15)))
+    candidate_peak = float(np.max(np.abs(candidate)))
+    reference_peak = float(np.max(np.abs(reference)))
+    peak_match_gain = reference_peak / max(candidate_peak, 1.0e-15)
+    peak_matched = candidate * peak_match_gain
+    peak_matched_delta = peak_matched - reference
+    peak_matched_delta_rms = float(np.sqrt(np.mean(np.square(peak_matched_delta, dtype=np.float64)) + 1.0e-15))
+    peak_match_gain_db = float(20.0 * np.log10(max(peak_match_gain, 1.0e-15)))
     left = candidate.reshape(-1).astype(np.float64)
     right = reference.reshape(-1).astype(np.float64)
     denominator = float(np.linalg.norm(left) * np.linalg.norm(right))
     correlation = float(np.dot(left, right) / denominator) if denominator > 1.0e-12 else 0.0
-    return MixDistance(delta_rms, level_match_gain, level_match_gain_db, level_matched_delta_rms, correlation)
+    return MixDistance(
+        delta_rms,
+        level_match_gain,
+        level_match_gain_db,
+        level_matched_delta_rms,
+        peak_match_gain,
+        peak_match_gain_db,
+        peak_matched_delta_rms,
+        correlation,
+    )
 
 
 def compare_mix_conservation(

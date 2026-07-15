@@ -43,12 +43,19 @@ class IRBleedModel:
 class IRBleedPainter:
     """Learn cross-stem transfer in quiet regions and paint it over the full timeline."""
 
-    def __init__(self, n_fft: int = 2048, hop_size: int = 512, ridge_ratio: float = 1.0e-5) -> None:
+    def __init__(
+        self,
+        n_fft: int = 2048,
+        hop_size: int = 512,
+        ridge_ratio: float = 0.1,
+        paint_chunk_seconds: float = 30.0,
+    ) -> None:
         if n_fft <= 0 or hop_size <= 0 or hop_size > n_fft:
             raise ValueError("n_fft and hop_size must define a valid overlap-add analysis")
         self.n_fft = int(n_fft)
         self.hop_size = int(hop_size)
         self.ridge_ratio = float(ridge_ratio)
+        self.paint_chunk_seconds = float(paint_chunk_seconds)
 
     @staticmethod
     def _validated(stems: Mapping[str, np.ndarray]) -> tuple[dict[str, np.ndarray], int]:
@@ -97,33 +104,29 @@ class IRBleedPainter:
             raise ValueError("At least one certified quiet region is required")
         reference_stems = tuple(lane for lane in prepared if lane != target_stem)
         reference_channels = tuple((lane, channel) for lane in reference_stems for channel in range(prepared[lane].shape[1]))
-        reference_spectra = []
-        times = None
-        for lane, channel in reference_channels:
-            current_times, spectrum = self._transform(prepared[lane][:, channel], sample_rate)
-            times = current_times if times is None else times
-            reference_spectra.append(spectrum)
-        assert times is not None
-        references = np.stack(reference_spectra, axis=0)
-        frame_samples = np.rint(times * sample_rate).astype(np.int64)
-        quiet_mask = np.zeros(len(frame_samples), dtype=bool)
+        reference_parts: list[list[np.ndarray]] = [[] for _ in reference_channels]
+        target_parts: list[list[np.ndarray]] = [[] for _ in range(prepared[target_stem].shape[1])]
         for start, end in regions:
-            quiet_mask |= (frame_samples >= start) & (frame_samples < end)
-        if int(np.count_nonzero(quiet_mask)) < max(8, 2 * len(reference_channels)):
+            for index, (lane, channel) in enumerate(reference_channels):
+                reference_parts[index].append(self._transform(prepared[lane][start:end, channel], sample_rate)[1])
+            for channel in range(prepared[target_stem].shape[1]):
+                target_parts[channel].append(self._transform(prepared[target_stem][start:end, channel], sample_rate)[1])
+        references = np.stack([np.concatenate(parts, axis=1) for parts in reference_parts], axis=0)
+        if references.shape[2] < max(8, 2 * len(reference_channels)):
             raise ValueError("Certified quiet regions do not contain enough analysis frames")
 
         target_channels = prepared[target_stem].shape[1]
         frequency_bins = references.shape[1]
         transfer = np.zeros((target_channels, frequency_bins, len(reference_channels)), dtype=np.complex64)
-        target_spectra = [self._transform(prepared[target_stem][:, channel], sample_rate)[1] for channel in range(target_channels)]
+        target_spectra = [np.concatenate(parts, axis=1) for parts in target_parts]
         for frequency in range(frequency_bins):
-            matrix = references[:, frequency, quiet_mask].T
+            matrix = references[:, frequency].T
             covariance = np.conj(matrix.T) @ matrix
             scale = float(np.trace(covariance).real) / max(1, len(reference_channels))
             ridge = max(1.0e-12, scale * self.ridge_ratio)
             system = covariance + ridge * np.eye(len(reference_channels), dtype=np.complex128)
             for channel in range(target_channels):
-                observed = target_spectra[channel][frequency, quiet_mask]
+                observed = target_spectra[channel][frequency]
                 transfer[channel, frequency] = np.linalg.solve(system, np.conj(matrix.T) @ observed).astype(np.complex64)
         return IRBleedModel(
             target_stem=target_stem,
@@ -138,10 +141,7 @@ class IRBleedPainter:
             quiet_regions=regions,
         )
 
-    def paint(self, stems: Mapping[str, np.ndarray], model: IRBleedModel) -> np.ndarray:
-        prepared, frames = self._validated(stems)
-        if frames != model.frames:
-            raise ValueError("Stem timeline no longer matches the learned model")
+    def _paint_segment(self, prepared: Mapping[str, np.ndarray], model: IRBleedModel, frames: int) -> np.ndarray:
         reference_spectra = []
         for lane, channel in model.reference_channels:
             reference_spectra.append(self._transform(prepared[lane][:, channel], model.sample_rate)[1])
@@ -160,4 +160,24 @@ class IRBleedPainter:
             )
             copy_frames = min(frames, len(audio))
             predicted[:copy_frames, channel] = audio[:copy_frames].astype(np.float32)
+        return predicted
+
+    def paint(self, stems: Mapping[str, np.ndarray], model: IRBleedModel) -> np.ndarray:
+        prepared, frames = self._validated(stems)
+        if frames != model.frames:
+            raise ValueError("Stem timeline no longer matches the learned model")
+        chunk_frames = int(round(self.paint_chunk_seconds * model.sample_rate))
+        if chunk_frames <= 0 or frames <= chunk_frames:
+            return self._paint_segment(prepared, model, frames)
+        predicted = np.zeros((frames, model.target_channels), dtype=np.float32)
+        context = model.n_fft * 2
+        for start in range(0, frames, chunk_frames):
+            end = min(frames, start + chunk_frames)
+            extended_start = max(0, start - context)
+            extended_end = min(frames, end + context)
+            segment = {lane: audio[extended_start:extended_end] for lane, audio in prepared.items()}
+            painted = self._paint_segment(segment, model, extended_end - extended_start)
+            crop_start = start - extended_start
+            crop_end = crop_start + (end - start)
+            predicted[start:end] = painted[crop_start:crop_end]
         return predicted

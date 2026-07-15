@@ -32,4 +32,7 @@ def test_content_comparison_volume_matches_quieter_cleaned_stems_before_scoring(
     assert abs(result.cleaned_to_original_mix.level_match_gain - 2.0) < 1.0e-6
     assert abs(result.cleaned_to_original_mix.level_match_gain_db - 6.0206) < 0.001
     assert result.cleaned_to_original_mix.level_matched_delta_rms < 1.0e-7
+    assert abs(result.cleaned_to_original_mix.peak_match_gain - 2.0) < 1.0e-6
+    assert abs(result.cleaned_to_original_mix.peak_match_gain_db - 6.0206) < 0.001
+    assert result.cleaned_to_original_mix.peak_matched_delta_rms < 1.0e-7
     assert result.cleaned_to_original_mix.correlation > 0.999999
