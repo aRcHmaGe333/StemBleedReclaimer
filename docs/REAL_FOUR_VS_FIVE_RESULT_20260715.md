@@ -40,3 +40,24 @@ Final outputs contain zero non-finite samples and zero samples above the origina
 ## Status
 
 The four-versus-five check is complete. The fifth stem wins this provisional real-material comparison. Promotion of the four-cleaned-stem result requires better quiet-region certification or a less destructive transfer estimate because its content distance is worse than the uncleaned separated-stem baseline.
+
+## Fifth channel against the original full mix
+
+After normalizing the fifth channel to the original full mix's peak:
+
+- required gain: +11.7684 dB
+- waveform correlation: 0.614351
+- average spectral-magnitude cosine: 0.830949
+- one-second windows above 0.5 correlation: 91.37%
+- RMS remained 8.49 dB below the original full mix
+- peak-normalized delta RMS: 0.130199
+
+The fifth channel is therefore a coherent filtered image of the arrangement rather than unrelated noise. It follows the full mix's activity and spectral structure but does not contain the complete musical signal.
+
+## Reversible owner return
+
+The fifth channel must not be re-separated blindly. The transfer already contains directed source-to-target contributions. These can be retained as owner-attributed components, returned to probable source stems, and supplemented by one unresolved residual channel. The required invariant is:
+
+`all owner returns + unresolved residual = original fifth channel`
+
+Returning the complete fifth signal is corrective in this result because the five-channel reconstruction is closer to the original than the four-cleaned-stem reconstruction. Attribution confidence controls routing only; it must never discard fifth-channel content.
