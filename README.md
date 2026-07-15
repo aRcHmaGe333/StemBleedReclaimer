@@ -19,6 +19,8 @@ It uses synchronized evidence from all four stems. A locally inactive `other` st
 
 Double-click `RUN_STEM_BLEED_RECLAIMER.bat`, then select the source stem folder and a new output folder.
 
+Dependencies are prepared once in the repository-local environment and reused on later launches.
+
 ## Python use
 
 ```python
@@ -36,3 +38,9 @@ The first release implements conservative duplicate-bleed suppression. Restoring
 
 All rights reserved under the APC/IPClaim license in `LICENSE`.
 
+## Verification
+
+- Automated checks: **3 passed**.
+- Synthetic proof: drum and bass owners both identified inside `other`.
+- Duplicate bleed reduced by **69.96%** while the legitimate active `other` section changed by RMS **0.000000032**.
+- See `proof/PROOF.md` for the reproducible evidence.
