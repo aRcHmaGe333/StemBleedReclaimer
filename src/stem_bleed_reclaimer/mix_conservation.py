@@ -10,6 +10,9 @@ import numpy as np
 @dataclass(frozen=True)
 class MixDistance:
     delta_rms: float
+    level_match_gain: float
+    level_match_gain_db: float
+    level_matched_delta_rms: float
     correlation: float
 
 
@@ -45,11 +48,18 @@ def _distance(candidate: np.ndarray, reference: np.ndarray) -> MixDistance:
         raise ValueError("Original full mix and stem sums must share one shape")
     delta = candidate - reference
     delta_rms = float(np.sqrt(np.mean(np.square(delta, dtype=np.float64)) + 1.0e-15))
+    candidate_rms = float(np.sqrt(np.mean(np.square(candidate, dtype=np.float64)) + 1.0e-15))
+    reference_rms = float(np.sqrt(np.mean(np.square(reference, dtype=np.float64)) + 1.0e-15))
+    level_match_gain = reference_rms / max(candidate_rms, 1.0e-15)
+    level_matched = candidate * level_match_gain
+    matched_delta = level_matched - reference
+    level_matched_delta_rms = float(np.sqrt(np.mean(np.square(matched_delta, dtype=np.float64)) + 1.0e-15))
+    level_match_gain_db = float(20.0 * np.log10(max(level_match_gain, 1.0e-15)))
     left = candidate.reshape(-1).astype(np.float64)
     right = reference.reshape(-1).astype(np.float64)
     denominator = float(np.linalg.norm(left) * np.linalg.norm(right))
     correlation = float(np.dot(left, right) / denominator) if denominator > 1.0e-12 else 0.0
-    return MixDistance(delta_rms, correlation)
+    return MixDistance(delta_rms, level_match_gain, level_match_gain_db, level_matched_delta_rms, correlation)
 
 
 def compare_mix_conservation(

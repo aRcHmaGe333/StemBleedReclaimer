@@ -26,9 +26,9 @@ There is no threshold gate in the painting/subtraction stage and no repeated den
 - A fifth full-length stem containing the sum of all predicted/removed bleed.
 - Original stem sum, cleaned stem sum, and cleaned-plus-fifth comparison mixes.
 
-When an independent original full mix is supplied, the report measures which reconstruction is closer: four cleaned stems alone, or four cleaned stems plus the fifth removed-noise stem. The fifth stem also preserves every removed contribution for direct audition.
+When an independent original full mix is supplied, the report measures which reconstruction is closer: four cleaned stems alone, or four cleaned stems plus the fifth removed-noise stem. Before content-distance scoring, each reconstruction receives one global RMS-matching gain against the original full mix. The report records that gain and the level-matched residual, so a quieter cleaned mix is not penalized merely for being quieter. The fifth stem also preserves every removed contribution for direct audition.
 
-Because `cleaned + removed` algebraically reconstructs the original stem sum, this comparison certifies conservation and wiring. It does not by itself prove that every removed sound was correctly classified; the fifth stem and individual cleaned stems still require residual/identity inspection.
+Because `cleaned + removed` algebraically reconstructs the original stem sum, five stems being closer does **not** establish that five stems are more accurate. That comparison certifies conservation and wiring. The meaningful content comparison is the globally volume-matched four-cleaned-stem mix against the independent original full mix, followed by residual/identity inspection of the fifth stem.
 
 ## Quiet-region input
 
