@@ -3,6 +3,7 @@
 StemBleedReclaimer is an independent stem-cleaning product that identifies audible material leaking into the wrong stem, attributes it to the most likely owner, and conservatively removes only the duplicate leakage.
 
 It uses synchronized evidence from all four stems. A locally inactive `other` stem can therefore reveal isolated drum and bass bleed instead of generating false `other` events.
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20work-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/earthcraft)
 
 ## Current product behavior
 
