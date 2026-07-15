@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import numpy as np
+import soundfile as sf
+from pathlib import Path
 
 from stem_bleed_reclaimer import BleedCleaner, BleedConfig
 
@@ -55,3 +57,31 @@ def test_analysis_is_deterministic():
     cleaner = BleedCleaner(BleedConfig(frame_size=1024, hop_size=256, minimum_confidence=0.72))
     assert cleaner.analyze(stems, 16000) == cleaner.analyze(stems, 16000)
 
+
+def test_folder_processing_writes_new_stems_and_never_changes_sources(tmp_path: Path):
+    stems, _ = _fixture()
+    source = tmp_path / "source"
+    destination = tmp_path / "cleaned"
+    source.mkdir()
+    original_bytes = {}
+    for lane, audio in stems.items():
+        path = source / f"{lane}.wav"
+        sf.write(path, audio, 16000, subtype="FLOAT")
+        original_bytes[lane] = path.read_bytes()
+
+    result = BleedCleaner(BleedConfig(frame_size=1024, hop_size=256, minimum_confidence=0.72)).process_folder(source, destination)
+
+    assert result.frames == 64000
+    assert {Path(path).name for path in result.output_paths.values()} == {"drums.wav", "bass.wav", "other.wav", "vocals.wav"}
+    assert all((source / f"{lane}.wav").read_bytes() == original_bytes[lane] for lane in stems)
+
+
+def test_misaligned_stems_are_rejected_before_analysis(tmp_path: Path):
+    for lane, frames in {"drums": 1000, "bass": 1000, "other": 999, "vocals": 1000}.items():
+        sf.write(tmp_path / f"{lane}.wav", np.zeros((frames, 1), dtype=np.float32), 16000)
+    try:
+        BleedCleaner.load_stem_folder(tmp_path)
+    except ValueError as exc:
+        assert "identical" in str(exc)
+    else:
+        raise AssertionError("misaligned stems were accepted")
