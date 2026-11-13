@@ -45,3 +45,9 @@ All rights reserved under the APC/IPClaim license in `LICENSE`.
 - Synthetic proof: drum and bass owners both identified inside `other`.
 - Duplicate bleed reduced by **69.96%** while the legitimate active `other` section changed by RMS **0.000000032**.
 - See `proof/PROOF.md` for the reproducible evidence.
+
+## Better implementations
+
+The purpose of this project matters more than its current design. Its architecture and methods are examples of how to achieve that purpose, not permanent limits. A better approach can replace any part or all of the implementation when it produces a better result. Document new methods as they are developed; preserve the original publication history.
+
+[Principle shared by all projects](https://github.com/aRcHmaGe333/aRcHmaGe333/blob/main/UNIVERSAL_IMPLEMENTATION_PRINCIPLES.md)
